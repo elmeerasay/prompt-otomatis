@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MetaMask ETH Sender</title>
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            position: relative;
+        }
+
+        .content {
+            max-width: 600px;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+            z-index: 1;
+            position: relative;
+        }
+
+        .popup-notification {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid transparent;
+            border-radius: 4px;
+            background-color: #f8d7da;
+            color: #721c24;
+            display: none;
+            z-index: 2;
+        }
+
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="content">
+        <h1>PROMPT MINT</h1>
+        <p>Gunakan untuk testnet | dyor</p>
+        <button id="connectButton" onclick="connect()">Connect MetaMask</button>
+        <p>Account: <span id="account">Not connected</span></p>
+        <p>Balance: <span id="balance">0</span> ETH</p>
+
+        <!-- <p>Pakai autoklik | Klik "Kirim" yang banyak</p>
+        <p>Baru konfirmasi di Metamask :p</p> -->
+        <button onclick="sendEth()">Kirim</button>
+        <p>Successful Transactions: <span id="successCount">0</span></p>
+    </div>
+
+    <div id="notification" class="popup-notification"></div>
+
+    <script>
+        let successCount = 0;
+
+        function generateRandomHex() {
+            const originalHex = "0x4fde2bc200000000000000000000000000000000000000000000000000000000000000e000000000000000000000000000000000000000000000000000000000000001200000000000000000000000000000000000000000000000000000000000000012000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000000000027100000000000000000000000000000000000000000000000000000000000002710000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000045858585800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000458585858000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
+
+            const diffPositions = [
+                [526, '5', '4'],
+                [527, '8', '1'],
+                [654, '5', '4'],
+                [655, '8', '1']
+            ];
+
+            let hexChars = originalHex.slice(2).split('');
+
+            diffPositions.forEach(([pos, origChar, newChar]) => {
+                hexChars[pos] = Math.random() < 0.5 ? origChar : newChar;
+            });
+
+            return '0x' + hexChars.join('');
+        }
+
+        async function connect() {
+            try {
+                const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+                const account = accounts[0];
+                document.getElementById('account').textContent = account;
+                document.getElementById('connectButton').textContent = 'Connected';
+
+                const balance = await ethereum.request({ method: 'eth_getBalance', params: [account, 'latest'] });
+                document.getElementById('balance').textContent = (parseInt(balance, 16) / 1e18).toFixed(5);
+            } catch (error) {
+                console.error(error);
+                showNotification('MetaMask connection failed. Please make sure MetaMask is installed and unlocked.', 'error');
+            }
+        }
+
+        async function sendEth() {
+            const recipient = "0xaa037A960cf8Fb19c64cef05025497E2E4869392";
+            const amount = '0x0'; // 0 ETH
+            const data = generateRandomHex();
+
+            try {
+                const transactionParams = {
+                    from: ethereum.selectedAddress,
+                    to: recipient,
+                    value: amount,
+                    data: data
+                };
+
+                const txHash = await ethereum.request({
+                    method: 'eth_sendTransaction',
+                    params: [transactionParams]
+                });
+
+                successCount++;
+                document.getElementById('successCount').textContent = successCount;
+                showNotification('Transaction successful: ' + txHash, 'success');
+            } catch (error) {
+                console.error(error);
+                showNotification('Transaction failed.', 'error');
+            }
+        }
+
+        function showNotification(message, type) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = 'popup-notification ' + type;
+            notification.style.display = 'block';
+
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
